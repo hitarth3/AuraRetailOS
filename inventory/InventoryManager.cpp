@@ -29,7 +29,7 @@ void InventoryManager::showStock() const {
         std::cout << "  " << p.getCode() << " - " << p.getName();
         if (!p.getCode().empty() && toupper(p.getCode()[0]) == 'E')
             std::cout << " (Emergency Item)";
-        std::cout << " (₹" << p.getPrice() << ") Stock: " << p.getStock() << "\n";
+        std::cout << " (Rs." << p.getPrice() << ") Stock: " << p.getStock() << "\n";
     }
 }
 

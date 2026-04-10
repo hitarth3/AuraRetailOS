@@ -14,18 +14,17 @@
 using namespace std;
 
 void clearScreen() {
-    for (int i = 0; i < 50; ++i) cout << "\n";
+    for (int i = 0; i < 2; ++i) cout << "\n";
 }
 
 void pressEnterToContinue() {
     cout << "\nPress Enter to continue...";
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
 
 void displayMenu() {
     cout << "\n====================================\n";
-    cout << "      AURA RETAIL OS - HOSPITAL KIOSK\n";
+    cout << "   AURA RETAIL OS - HOSPITAL KIOSK\n";
     cout << "====================================\n";
     cout << "1. Show Kiosk Status\n";
     cout << "2. Purchase Item\n";
@@ -52,12 +51,12 @@ void showEmergencyItems(InventoryManager* inv) {
     for (const auto& item : emergencyItems) {
         cout << "  " << item.getCode() << " - " << item.getName()
              << " (Emergency Item) - Stock: " << item.getStock()
-             << " - Price: ₹" << item.getPrice() << "\n";
+             << " - Price: Rs." << item.getPrice() << "\n";
     }
 }
 
 int main() {
-    cout << "===== Aura Retail OS – Hospital Kiosk Demo =====\n\n";
+    cout << "===== Aura Retail OS - Hospital Kiosk Demo =====\n\n";
     
     CentralRegistry* reg = CentralRegistry::getInstance();
     string location = "City Hospital";
@@ -67,7 +66,7 @@ int main() {
     
     InventoryManager* inv = new InventoryManager();
     
-    // Regular Products (P) - Prices in INR (₹)
+    // Regular Products (P) - Prices in INR (Rs.)
     inv->addProduct(Product("P006", "Ibuprofen", 30.00, 18));
     inv->addProduct(Product("P007", "Cough Syrup", 95.00, 10));
     inv->addProduct(Product("P008", "Hand Sanitizer", 50.00, 25));
@@ -79,7 +78,7 @@ int main() {
     inv->addProduct(Product("P014", "Pain Relief Spray", 180.00, 9));
     inv->addProduct(Product("P015", "Cotton Roll", 40.00, 22));
 
-    // Emergency Items (E) - Prices in INR (₹)
+    // Emergency Items (E) - Prices in INR (Rs.)
     inv->addProduct(Product("E004", "Oxygen Mask", 180.00, 6));
     inv->addProduct(Product("E005", "Defibrillator Pads", 2500.00, 3));
     inv->addProduct(Product("E006", "IV Drip Set", 120.00, 8));
@@ -183,14 +182,14 @@ int main() {
                 double total = pay->calculateTotal(unitPrice, quantity);
                 
                 pay->displayStrategyMessage();
-                cout << "   Estimated total: ₹" << total << "\n";
+                cout << "   Estimated total: Rs." << total << "\n";
                 
-                cout << "Enter cash amount (₹): ";
+                cout << "Enter cash amount (Rs.): ";
                 cin >> cash;
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 
                 if (cash < total) {
-                    cout << "[ERROR] Insufficient cash. Need ₹" << total << "\n";
+                    cout << "[ERROR] Insufficient cash. Need Rs." << total << "\n";
                     pressEnterToContinue();
                     break;
                 }
@@ -199,7 +198,7 @@ int main() {
                 pay->processPayment(total);
                 inv->reduceStock(itemCode, quantity);
                 
-                cout << "   [OK] Purchase successful. Change: ₹" << cash - total << "\n";
+                cout << "   [OK] Purchase successful. Change: Rs." << cash - total << "\n";
                 pressEnterToContinue();
                 break;
             }

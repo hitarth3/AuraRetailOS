@@ -15,7 +15,7 @@ double PaymentProcessor::calculateTotal(double basePrice, int quantity) const {
 }
 
 void PaymentProcessor::processPayment(double amount) const {
-    std::cout << "   [Payment] Processed ₹" << amount << "\n";
+    std::cout << "   [Payment] Processed Rs." << amount << "\n";
 }
 
 void PaymentProcessor::displayStrategyMessage() const {

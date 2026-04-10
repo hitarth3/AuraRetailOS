@@ -56,7 +56,7 @@ bool Kiosk::purchaseItem(const std::string& itemCode, int quantity, double cash)
     double total = payment->calculateTotal(price, quantity);
     
     if (cash < total) {
-        std::cout << "   [ERROR] Insufficient cash. Need ₹" << total << "\n";
+        std::cout << "   [ERROR] Insufficient cash. Need Rs." << total << "\n";
         return false;
     }
     
@@ -64,6 +64,6 @@ bool Kiosk::purchaseItem(const std::string& itemCode, int quantity, double cash)
     payment->processPayment(total);
     inventory->reduceStock(itemCode, quantity);
     
-    std::cout << "   [OK] Purchase successful. Change: ₹" << cash - total << "\n";
+    std::cout << "   [OK] Purchase successful. Change: Rs." << cash - total << "\n";
     return true;
 }
