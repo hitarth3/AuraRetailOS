@@ -1,5 +1,11 @@
 #include "hardware/HardwareSimulator.h"
 #include <iostream>
-void HardwareSimulator::dispense(const std::string& item, int qty) {
-    std::cout << "   [Hardware] Dispensing " << qty << " x " << item << "\n";
+
+bool HardwareSimulator::dispense(const std::string& itemCode, int qty) {
+    if (itemCode == "FAIL") {
+        std::cout << "   [Hardware] [FATAL] Dispenser mechanical failure for " << itemCode << "!\n";
+        return false;
+    }
+    std::cout << "   [Hardware] Dispensing " << qty << " x " << itemCode << "\n";
+    return true;
 }
