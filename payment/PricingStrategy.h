@@ -43,4 +43,5 @@ public:
     std::string getName() const override { return "Emergency (90% off)"; }
 };
 
+// Additional pricing strategies can be added here
 #endif
