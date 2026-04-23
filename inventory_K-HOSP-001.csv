@@ -1,0 +1,7 @@
+Code,Name,Price,Stock
+P006,Ibuprofen,30,19
+P007,Cough Syrup,95,10
+P008,Hand Sanitizer,50,25
+E004,Oxygen Mask,180,6
+E005,Defibrillator Pads,2500,3
+FAIL,Defective Item (Test),1,10
