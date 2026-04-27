@@ -1,0 +1,6 @@
+Code,Name,Price,Stock
+E001,Emergency Blanket,100,100
+E002,First Aid Kit,500,20
+E003,Canned Food Pack,150,50
+E004,Clean Water (5L),50,80
+FAIL,Defective Item (Test),1,10
