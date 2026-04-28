@@ -1,4 +1,5 @@
 #include "inventory/InventoryManager.h"
+#include "core/EventBus.h"
 #include <iostream>
 #include <cctype>
 
@@ -19,8 +20,22 @@ double InventoryManager::getPrice(const std::string& code) const {
 }
 
 void InventoryManager::reduceStock(const std::string& code, int qty) {
-    for (auto& p : products)
-        if (p.getCode() == code) p.reduceStock(qty);
+    for (auto& p : products) {
+        if (p.getCode() == code) {
+            p.reduceStock(qty);
+            if (p.getStock() < 3) {
+                EventBus::getInstance()->publish(EVENT_LOW_STOCK, "Item " + code + " (" + p.getName() + ") is low on stock: " + std::to_string(p.getStock()));
+            }
+        }
+    }
+}
+
+void InventoryManager::increaseStock(const std::string& code, int qty) {
+    for (auto& p : products) {
+        if (p.getCode() == code) {
+            p.addStock(qty);
+        }
+    }
 }
 
 void InventoryManager::showStock() const {
