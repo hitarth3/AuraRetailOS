@@ -1,0 +1,9 @@
+TRANSACTION,Purchase executed: P006 x1
+TRANSACTION,Purchase executed: M001 x3
+TRANSACTION,Refund executed: U001 x3
+TRANSACTION,Refund executed: P006 x2 (Rs.60.000000)
+TRANSACTION,Refund executed: M001 x10 (Rs.200.000000)
+TRANSACTION,Purchase executed: M001 x4
+TRANSACTION,Refund executed: M001 x8 (Rs.160.000000)
+LOW_STOCK,Item M004 (Metro Card (Preloaded)) is low on stock: 2
+TRANSACTION,Purchase executed: M004 x18

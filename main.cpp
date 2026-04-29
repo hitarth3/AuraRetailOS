@@ -7,251 +7,249 @@
 #include "core/CentralRegistry.h"
 #include "core/Kiosk.h"
 #include "core/KioskInterface.h"
+#include "core/KioskFactory.h"
+#include "payment/PurchaseItemCommand.h"
+#include "core/EventBus.h"
+#include "hardware/FailureHandler.h"
+#include "core/PersistenceManager.h"
 #include "inventory/InventoryManager.h"
 #include "hardware/HardwareSimulator.h"
 #include "payment/PaymentProcessor.h"
 
 using namespace std;
 
+// ANSI Color Codes
+#define RESET   "\033[0m"
+#define RED     "\033[31m"
+#define GREEN   "\033[32m"
+#define YELLOW  "\033[33m"
+#define BLUE    "\033[34m"
+#define MAGENTA "\033[35m"
+#define CYAN    "\033[36m"
+#define BOLD    "\033[1m"
+
+// Concrete Observer for logging & persistence
+class SystemLogger : public Observer {
+public:
+    void onEvent(const string& eventType, const string& message) override {
+        cout << BLUE << "[SystemLogger] [" << eventType << "] " << message << RESET << endl;
+        PersistenceManager::logTransaction(eventType, message);
+    }
+};
+
 void clearScreen() {
     for (int i = 0; i < 2; ++i) cout << "\n";
 }
 
 void pressEnterToContinue() {
-    cout << "\nPress Enter to continue...";
-    cin.get();
+    cout << "\n" << CYAN << "Press Enter to continue..." << RESET;
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
 }
 
-void displayMenu() {
-    cout << "\n====================================\n";
-    cout << "   AURA RETAIL OS - HOSPITAL KIOSK\n";
-    cout << "====================================\n";
-    cout << "1. Show Kiosk Status\n";
-    cout << "2. Purchase Item\n";
-    cout << "3. Change Kiosk Mode\n";
-    cout << "4. Change Pricing Strategy\n";
-    cout << "5. Show Inventory\n";
-    cout << "0. Exit\n";
-    cout << "====================================\n";
-    cout << "Enter your choice: ";
+void displayHeader() {
+    cout << MAGENTA << BOLD << "================================================\n";
+    cout << "          A U R A   R E T A I L   O S\n";
+    cout << "     The Future of Smart City Infrastructure\n";
+    cout << "================================================\n" << RESET;
 }
 
-// Check if an item code is an emergency item (starts with 'E')
-bool isEmergencyItem(const string& code) {
-    return !code.empty() && toupper(code[0]) == 'E';
-}
-
-void showEmergencyItems(InventoryManager* inv) {
-    cout << "\n--- Emergency Items Available ---\n";
-    vector<Product> emergencyItems = inv->getEmergencyItems();
-    if (emergencyItems.empty()) {
-        cout << "  No emergency items in stock.\n";
-        return;
-    }
-    for (const auto& item : emergencyItems) {
-        cout << "  " << item.getCode() << " - " << item.getName()
-             << " (Emergency Item) - Stock: " << item.getStock()
-             << " - Price: Rs." << item.getPrice() << "\n";
-    }
+void displayMenu(const string& location) {
+    displayHeader();
+    cout << CYAN << " Location: " << RESET << location << "\n";
+    cout << CYAN << " Status:   " << RESET << CentralRegistry::getInstance()->getStatus() << "\n";
+    cout << MAGENTA << "------------------------------------------------\n" << RESET;
+    cout << " " << YELLOW << "1." << RESET << " Show Kiosk Status\n";
+    cout << " " << YELLOW << "2." << RESET << " Purchase Item (Command Pattern)\n";
+    cout << " " << YELLOW << "3." << RESET << " Refund Transaction (Command Pattern)\n";
+    cout << " " << YELLOW << "4." << RESET << " Restock Inventory (Command Pattern)\n";
+    cout << " " << YELLOW << "5." << RESET << " Run System Diagnostics\n";
+    cout << " " << YELLOW << "6." << RESET << " Change Kiosk Mode (Observer)\n";
+    cout << " " << YELLOW << "7." << RESET << " Change Pricing Strategy (Strategy)\n";
+    cout << " " << YELLOW << "8." << RESET << " Show Inventory\n";
+    cout << " " << YELLOW << "9." << RESET << " Simulate Hardware Failure\n";
+    cout << " " << YELLOW << "0." << RESET << " Exit System\n";
+    cout << MAGENTA << "------------------------------------------------\n" << RESET;
+    cout << BOLD << " Choice > " << RESET;
 }
 
 int main() {
-    cout << "===== Aura Retail OS - Hospital Kiosk Demo =====\n\n";
+    clearScreen();
+    displayHeader();
+    cout << "\nInitializing Aura Retail OS subsystems...\n";
+    
+    EventBus* bus = EventBus::getInstance();
+    SystemLogger* logger = new SystemLogger();
+    bus->subscribe(logger);
+    
+    FailureHandler* failureChain = new AutomaticRetryHandler();
+    HardwareRecalibrationHandler* recalHandler = new HardwareRecalibrationHandler();
+    TechnicianAlertHandler* techHandler = new TechnicianAlertHandler();
+    failureChain->setNext(recalHandler);
+    recalHandler->setNext(techHandler);
+    
+    cout << "\n" << BOLD << "Select Kiosk Environment (Abstract Factory):" << RESET << "\n";
+    cout << YELLOW << " [1]" << RESET << " Hospital\n";
+    cout << YELLOW << " [2]" << RESET << " Metro Station\n";
+    cout << YELLOW << " [3]" << RESET << " University Campus\n";
+    cout << YELLOW << " [4]" << RESET << " Disaster Zone\n";
+    cout << BOLD << " Environment > " << RESET;
+    
+    int envChoice;
+    if (!(cin >> envChoice)) envChoice = 1;
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    
+    KioskType type;
+    switch (envChoice) {
+        case 1: type = KioskType::HOSPITAL; break;
+        case 2: type = KioskType::METRO; break;
+        case 3: type = KioskType::UNIVERSITY; break;
+        case 4: type = KioskType::DISASTER_ZONE; break;
+        default: type = KioskType::HOSPITAL; break;
+    }
     
     CentralRegistry* reg = CentralRegistry::getInstance();
-    string location = "City Hospital";
+    string kioskId;
+    switch (envChoice) {
+        case 1: kioskId = "K-HOSP-001"; break;
+        case 2: kioskId = "K-METR-001"; break;
+        case 3: kioskId = "K-UNIV-001"; break;
+        case 4: kioskId = "K-DISZ-001"; break;
+        default: kioskId = "K-AURA-001"; break;
+    }
     
-    Kiosk* kiosk1 = new Kiosk("K001", location);
-    reg->registerKiosk("K001", kiosk1);
+    Kiosk* kiosk = KioskFactory::createKiosk(type, kioskId);
+    reg->registerKiosk(kiosk->getId(), kiosk);
+    reg->setStatus("Online");
+    reg->setConfig("Env", to_string(envChoice));
     
-    InventoryManager* inv = new InventoryManager();
+    PersistenceManager::saveConfig(kiosk->getId(), kiosk->getLocation());
+    PersistenceManager::saveInventory(kiosk->getInventory(), kiosk->getId());
     
-    // Regular Products (P) - Prices in INR (Rs.)
-    inv->addProduct(Product("P006", "Ibuprofen", 30.00, 18));
-    inv->addProduct(Product("P007", "Cough Syrup", 95.00, 10));
-    inv->addProduct(Product("P008", "Hand Sanitizer", 50.00, 25));
-    inv->addProduct(Product("P009", "Face Mask Pack", 120.00, 20));
-    inv->addProduct(Product("P010", "Thermometer", 250.00, 6));
-    inv->addProduct(Product("P011", "Glucose Powder", 110.00, 14));
-    inv->addProduct(Product("P012", "ORS Packets", 20.00, 30));
-    inv->addProduct(Product("P013", "Vitamin Tablets", 150.00, 16));
-    inv->addProduct(Product("P014", "Pain Relief Spray", 180.00, 9));
-    inv->addProduct(Product("P015", "Cotton Roll", 40.00, 22));
-
-    // Emergency Items (E) - Prices in INR (Rs.)
-    inv->addProduct(Product("E004", "Oxygen Mask", 180.00, 6));
-    inv->addProduct(Product("E005", "Defibrillator Pads", 2500.00, 3));
-    inv->addProduct(Product("E006", "IV Drip Set", 120.00, 8));
-    inv->addProduct(Product("E007", "Burn Kit", 350.00, 5));
-    inv->addProduct(Product("E008", "Splint Kit", 450.00, 4));
-    inv->addProduct(Product("E009", "Emergency Scissors", 150.00, 10));
-    inv->addProduct(Product("E010", "CPR Mask", 250.00, 7));
-    inv->addProduct(Product("E011", "Stretcher Straps", 600.00, 3));
-    inv->addProduct(Product("E012", "Trauma Dressing", 200.00, 6));
-    inv->addProduct(Product("E013", "Saline Injection", 80.00, 9));
-    
-    kiosk1->setInventory(inv);
-    
-    HardwareSimulator* hw = new HardwareSimulator();
-    kiosk1->setHardware(hw);
-    PaymentProcessor* pay = new PaymentProcessor();
-    kiosk1->setPayment(pay);
-    
-    KioskInterface ui(kiosk1);
+    InventoryManager* inv = kiosk->getInventory();
+    PaymentProcessor* pay = kiosk->getPayment();
+    KioskInterface ui(kiosk);
     
     int choice;
     string itemCode;
     int quantity;
-    double cash;
+    double cashAmount;
     
     do {
         clearScreen();
-        displayMenu();
-        cin >> choice;
+        displayMenu(kiosk->getLocation());
+        if (!(cin >> choice)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            continue;
+        }
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
         
         switch (choice) {
             case 1:
-                cout << "\n--- Kiosk Status ---\n";
-                cout << "ID: " << kiosk1->getId() << "\n";
-                cout << "Location: " << kiosk1->getLocation() << "\n";
-                cout << "Mode: " << kiosk1->getState()->getName() << "\n";
-                if (pay) {
-                    cout << "Pricing Strategy: " << pay->getStrategyName() << "\n";
-                }
+                ui.showStatus();
                 pressEnterToContinue();
                 break;
                 
             case 2: {
-                string currentMode = kiosk1->getState()->getName();
-                
-                if (currentMode == "Maintenance") {
-                    cout << "\n[ERROR] Purchases are disabled in Maintenance mode.\n";
-                    pressEnterToContinue();
-                    break;
-                }
-                
-                cout << "\n--- Purchase Item ---\n";
-                if (pay) {
-                    cout << "Pricing Strategy: " << pay->getStrategyName() << "\n";
-                }
-                
-                if (currentMode == "Emergency") {
-                    showEmergencyItems(inv);
-                    cout << "\nOnly emergency items (codes starting with 'E') can be purchased.\n";
-                } else {
-                    inv->showStock();
-                }
-                
-                cout << "\nEnter item code: ";
-                getline(cin, itemCode);
+                cout << "\n" << BOLD << "--- Purchase Item ---" << RESET << "\n";
+                inv->showStock();
+                cout << "\n Code: "; getline(cin, itemCode);
                 transform(itemCode.begin(), itemCode.end(), itemCode.begin(), ::toupper);
+                cout << " Qty:  "; cin >> quantity;
                 
-                // Emergency mode restriction: must be an emergency item
-                if (currentMode == "Emergency" && !isEmergencyItem(itemCode)) {
-                    cout << "[ERROR] In Emergency mode, only emergency items allowed.\n";
+                double basePrice = inv->getPrice(itemCode);
+                if (basePrice <= 0) {
+                    cout << RED << " [Error] Invalid item code.\n" << RESET;
                     pressEnterToContinue();
                     break;
                 }
                 
-                cout << "Enter quantity: ";
-                cin >> quantity;
-                if (quantity <= 0) {
-                    cout << "[ERROR] Quantity must be positive.\n";
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                    pressEnterToContinue();
-                    break;
+                double totalDue = pay->calculateTotal(basePrice, quantity);
+                cout << YELLOW << " Total Due: Rs." << totalDue << RESET << " (Strategy: " << pay->getStrategyName() << ")\n";
+                cout << " Enter Cash: "; cin >> cashAmount;
+                cin.ignore();
+                
+                if (ui.purchaseItem(itemCode, quantity, cashAmount)) {
+                    PersistenceManager::saveInventory(inv, kiosk->getId());
                 }
-                
-                if (quantity > 100) {
-                    cout << "[ERROR] Quantity too high (max 100).\n";
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                    pressEnterToContinue();
-                    break;
-                }
-                
-                if (!inv->hasStock(itemCode, quantity)) {
-                    cout << "[ERROR] Insufficient stock! Available: " 
-                         << inv->getStock(itemCode) << "\n";
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                    pressEnterToContinue();
-                    break;
-                }
-                
-                double unitPrice = inv->getPrice(itemCode);
-                double total = pay->calculateTotal(unitPrice, quantity);
-                
-                pay->displayStrategyMessage();
-                cout << "   Estimated total: Rs." << total << "\n";
-                
-                cout << "Enter cash amount (Rs.): ";
-                cin >> cash;
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                
-                if (cash < total) {
-                    cout << "[ERROR] Insufficient cash. Need Rs." << total << "\n";
-                    pressEnterToContinue();
-                    break;
-                }
-                
-                if (hw) hw->dispense(itemCode, quantity);
-                pay->processPayment(total);
-                inv->reduceStock(itemCode, quantity);
-                
-                cout << "   [OK] Purchase successful. Change: Rs." << cash - total << "\n";
                 pressEnterToContinue();
                 break;
             }
-                
+
             case 3:
-                cout << "\n--- Change Kiosk Mode ---\n";
-                cout << "Current mode: " << kiosk1->getState()->getName() << "\n";
-                cout << "1. Active\n2. Maintenance\n3. Emergency\n";
-                cout << "Enter choice (1-3): ";
-                cin >> choice;
+                cout << "\n" << BOLD << "--- Refund Transaction ---" << RESET << "\n";
+                cout << " Item Code: "; getline(cin, itemCode);
+                transform(itemCode.begin(), itemCode.end(), itemCode.begin(), ::toupper);
+                cout << " Qty:       "; cin >> quantity;
                 cin.ignore();
-                if (choice == 1) ui.setMode("active");
-                else if (choice == 2) ui.setMode("maintenance");
-                else if (choice == 3) ui.setMode("emergency");
-                else cout << "Invalid choice.\n";
+                ui.refundTransaction(itemCode, quantity);
+                PersistenceManager::saveInventory(inv, kiosk->getId());
+                pressEnterToContinue();
+                break;
+
+            case 4:
+                cout << "\n" << BOLD << "--- Restock Inventory ---" << RESET << "\n";
+                cout << " Item Code: "; getline(cin, itemCode);
+                transform(itemCode.begin(), itemCode.end(), itemCode.begin(), ::toupper);
+                cout << " Qty:       "; cin >> quantity;
+                cin.ignore();
+                ui.restockInventory(itemCode, quantity);
+                PersistenceManager::saveInventory(inv, kiosk->getId());
+                pressEnterToContinue();
+                break;
+
+            case 5:
+                ui.runDiagnostics();
                 pressEnterToContinue();
                 break;
                 
-            case 4:
-                cout << "\n--- Change Pricing Strategy ---\n";
-                cout << "Current: " << pay->getStrategyName() << "\n";
-                cout << "1. Standard\n2. Discount (20% off)\n3. Emergency (90% off)\n";
-                cout << "Enter choice (1-3): ";
-                cin >> choice;
-                cin.ignore();
+            case 6:
+                cout << "\n" << BOLD << "--- Change Mode ---" << RESET << "\n";
+                cout << " [1] Active [2] Power-saving [3] Maintenance [4] Emergency\n Mode > ";
+                cin >> choice; cin.ignore();
+                if (choice == 1) ui.setMode("active");
+                else if (choice == 2) ui.setMode("powersaving");
+                else if (choice == 3) ui.setMode("maintenance");
+                else if (choice == 4) ui.setMode("emergency");
+                pressEnterToContinue();
+                break;
+                
+            case 7:
+                cout << "\n" << BOLD << "--- Change Pricing ---" << RESET << "\n";
+                cout << " [1] Standard [2] Discount [3] Emergency\n Pricing > ";
+                cin >> choice; cin.ignore();
                 if (choice == 1) ui.setPricing("standard");
                 else if (choice == 2) ui.setPricing("discount");
                 else if (choice == 3) ui.setPricing("emergency");
-                else cout << "Invalid choice.\n";
                 pressEnterToContinue();
                 break;
                 
-            case 5:
-                cout << "\n--- Current Inventory ---\n";
+            case 8:
                 inv->showStock();
                 pressEnterToContinue();
                 break;
                 
+            case 9:
+                cout << "\n" << BOLD << "--- Simulate Failure ---" << RESET << "\n";
+                cout << " [1] Minor [2] Moderate [3] Critical\n Level > ";
+                cin >> choice; cin.ignore();
+                if (choice == 1) failureChain->handle(FailureLevel::MINOR, "Dispenser sensor glitch");
+                else if (choice == 2) failureChain->handle(FailureLevel::MODERATE, "Dispenser mechanism jammed");
+                else if (choice == 3) failureChain->handle(FailureLevel::CRITICAL, "Main motor failure");
+                pressEnterToContinue();
+                break;
+                
             case 0:
-                cout << "\nExiting...\n";
+                cout << MAGENTA << "\n Shutting down Aura Retail OS...\n" << RESET;
+                reg->setStatus("Offline");
                 break;
                 
             default:
-                cout << "Invalid option.\n";
-                pressEnterToContinue();
+                break;
         }
     } while (choice != 0);
     
-    cout << "\n===== Simulation Complete =====\n";
-    
-    delete kiosk1;
-    delete inv;
-    delete hw;
-    delete pay;
+    delete failureChain;
+    delete logger;
     return 0;
 }

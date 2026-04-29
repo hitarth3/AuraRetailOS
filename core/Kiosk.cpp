@@ -2,6 +2,7 @@
 #include "inventory/InventoryManager.h"
 #include "hardware/HardwareSimulator.h"
 #include "payment/PaymentProcessor.h"
+#include "core/EventBus.h"
 #include <iostream>
 
 Kiosk::Kiosk(const std::string& kioskId, const std::string& loc)
@@ -18,6 +19,11 @@ void Kiosk::setState(KioskState* state) {
     delete currentState;
     currentState = state;
     std::cout << "[Kiosk " << id << "] Mode changed to " << currentState->getName() << "\n";
+    
+    if (currentState->getName() == "Emergency lockdown mode") {
+        EventBus::getInstance()->publish(EVENT_EMERGENCY_MODE, "Kiosk " + id + " entered EMERGENCY LOCKDOWN!");
+    }
+    
     currentState->handle(this);
 }
 
@@ -32,14 +38,25 @@ void Kiosk::displayStatus() const {
 }
 
 bool Kiosk::purchaseItem(const std::string& itemCode, int quantity, double cash) {
-    if (currentState->getName() == "Maintenance") {
-        std::cout << "   [ERROR] Cannot purchase in Maintenance mode.\n";
+    std::string mode = currentState->getName();
+    
+    if (mode == "Maintenance mode") {
+        std::cout << "   [ERROR] Purchases disabled in Maintenance mode.\n";
         return false;
     }
-    if (currentState->getName() == "Emergency" && itemCode != "E001") {
-        std::cout << "   [ERROR] Emergency mode: Only FirstAid (E001) allowed.\n";
-        return false;
+    
+    if (mode == "Emergency lockdown mode") {
+        // Only allow items starting with 'E'
+        if (itemCode.empty() || toupper(itemCode[0]) != 'E') {
+            std::cout << "   [ERROR] Lockdown active: Only emergency supplies allowed.\n";
+            return false;
+        }
     }
+    
+    if (mode == "Power-saving mode") {
+        std::cout << "   [Notice] Processing in Power-saving mode... (UI response may be slower)\n";
+    }
+
     if (!inventory) return false;
     if (!inventory->hasStock(itemCode, quantity)) {
         std::cout << "   [ERROR] Insufficient stock.\n";
@@ -48,7 +65,6 @@ bool Kiosk::purchaseItem(const std::string& itemCode, int quantity, double cash)
     
     double price = inventory->getPrice(itemCode);
     
-    // Show pricing strategy message (discount info)
     if (payment) {
         payment->displayStrategyMessage();
     }
@@ -60,7 +76,11 @@ bool Kiosk::purchaseItem(const std::string& itemCode, int quantity, double cash)
         return false;
     }
     
-    if (hardware) hardware->dispense(itemCode, quantity);
+    if (hardware && !hardware->dispense(itemCode, quantity)) {
+        std::cout << "   [ERROR] Hardware failure during dispensing.\n";
+        return false;
+    }
+    
     payment->processPayment(total);
     inventory->reduceStock(itemCode, quantity);
     
