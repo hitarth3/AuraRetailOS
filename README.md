@@ -7,7 +7,7 @@
 ## 📋 Table of Contents
 
 - [Overview](#-overview)
-- [Team Members & Contributions](#-team-members--contributions)
+- [Team Members & Contributions](#team-members)
 - [Design Patterns Implemented](#-design-patterns-implemented)
 - [Project Structure](#-project-structure)
 - [Features](#-features)
@@ -33,7 +33,7 @@ Aura Retail OS is an object-oriented C++ application that simulates an intellige
 
 ---
 
-## 🧑‍🤝‍🧑 Team Members & Contributions
+## <h2 id="team-members">🧑‍🤝‍🧑 Team Members & Contributions
 
 | Member | Subsystem | Key Patterns Implemented |
 |---|---|---|
